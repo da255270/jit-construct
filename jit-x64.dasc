@@ -22,6 +22,16 @@
 #define Dst &state
 #define MAX_NESTING 256
 
+
+int clearloop(char** p){
+  if(*((*p)+1)=='-' && *((*p)+2)==']'){
+    (*p)+=2;
+    return 1;
+  }else{
+    return 0;
+  }
+
+}
 int main(int argc, char *argv[])
 {
 	if (argc < 2) err("Usage: jit-x64 <inputfile>");
@@ -100,6 +110,11 @@ int main(int argc, char *argv[])
                           | add byte[PTR],value
                           value=0;
                         }
+                         if(clearloop(&p)){
+                           | mov byte[PTR], 0
+                         break;
+                        }
+                       
 			if (top == limit) err("Nesting too deep.");
 			// Each loop gets two pclabels: at the beginning and end.
 			// We store pclabel offsets in a stack to link the loop
