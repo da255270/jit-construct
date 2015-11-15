@@ -31,7 +31,8 @@ int main(int argc, char *argv[])
 	unsigned int maxpc = 0;
 	int pcstack[MAX_NESTING];
 	int *top = pcstack, *limit = pcstack + MAX_NESTING;
-
+        int shift=0;
+        int value=0;
 	// Function prologue.
 	|  push PTR
 	|  mov  PTR, rdi      // rdi store 1st argument
@@ -39,26 +40,66 @@ int main(int argc, char *argv[])
 	for (char *p = read_file(argv[1]); *p; p++) {
 		switch (*p) {
 		case '>':
-			|  inc  PTR
+			 if(value){
+                            | add byte[PTR],value
+                          value=0;
+                        } 
+                        shift++;
 			break;
 		case '<':
-			|  dec  PTR
+			if(value){   
+                            | add byte[PTR],value
+                            value=0;
+                        }
+                        shift--;
 			break;
 		case '+':
-			|  inc  byte [PTR]
+		        if(shift){
+                          | add PTR,shift 
+                          shift=0;
+                        }
+                        value++;
 			break;
 		case '-':
-			|  dec  byte [PTR]
+			if(shift){
+                          | add PTR,shift 
+                          shift=0;
+                        }
+                        value--;
 			break;
 		case '.':
+                         if(shift){
+                          | add PTR,shift
+                          shift=0;
+                        }
+                        if(value){
+                          | add byte[PTR],value
+                          value=0;
+                        }
 			|  movzx edi, byte [PTR]
 			|  callp putchar
 			break;
 		case ',':
+                         if(shift){
+                          | add PTR,shift
+                          shift=0;
+                        }
+                        if(value){
+                          | add byte[PTR],value
+                          value=0;
+                        }
 			|  callp getchar
 			|  mov   byte [PTR], al
 			break;
 		case '[':
+                         if(shift){
+                          | add PTR,shift
+                          shift=0;
+                        }
+                        if(value){
+                          | add byte[PTR],value
+                          value=0;
+                        }
 			if (top == limit) err("Nesting too deep.");
 			// Each loop gets two pclabels: at the beginning and end.
 			// We store pclabel offsets in a stack to link the loop
@@ -71,6 +112,14 @@ int main(int argc, char *argv[])
 			|=>(maxpc-1):
 			break;
 		case ']':
+                         if(shift){
+                          | add PTR,shift
+                          shift=0;
+                       }
+                        if(value){
+                          | add byte[PTR],value
+                          value=0;
+                        }
 			if (top == pcstack) err("Unmatched ']'");
 			top--;
 			|  cmp  byte [PTR], 0
