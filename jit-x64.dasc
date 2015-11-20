@@ -23,15 +23,6 @@
 #define MAX_NESTING 256
 
 
-int clearloop(char** p){
-  if(*((*p)+1)=='-' && *((*p)+2)==']'){
-    (*p)+=2;
-    return 1;
-  }else{
-    return 0;
-  }
-
-}
 int main(int argc, char *argv[])
 {
 	if (argc < 2) err("Usage: jit-x64 <inputfile>");
@@ -43,6 +34,7 @@ int main(int argc, char *argv[])
 	int *top = pcstack, *limit = pcstack + MAX_NESTING;
         int shift=0;
         int value=0;
+        int clear=0;
 	// Function prologue.
 	|  push PTR
 	|  mov  PTR, rdi      // rdi store 1st argument
@@ -50,18 +42,20 @@ int main(int argc, char *argv[])
 	for (char *p = read_file(argv[1]); *p; p++) {
 		switch (*p) {
 		case '>':
-			 if(value){
-                            | add byte[PTR],value
+			if(value){
+                          | add byte[PTR],value
                           value=0;
                         } 
                         shift++;
+                        clear=0;
 			break;
 		case '<':
 			if(value){   
-                            | add byte[PTR],value
-                            value=0;
+                          | add byte[PTR],value
+                          value=0;
                         }
                         shift--;
+                        clear=0;
 			break;
 		case '+':
 		        if(shift){
@@ -69,6 +63,7 @@ int main(int argc, char *argv[])
                           shift=0;
                         }
                         value++;
+                        clear=0;
 			break;
 		case '-':
 			if(shift){
@@ -76,9 +71,14 @@ int main(int argc, char *argv[])
                           shift=0;
                         }
                         value--;
+                        if(clear==1){
+                          clear=2;
+                        }else{
+                          clear=0;
+                        }
 			break;
 		case '.':
-                         if(shift){
+                        if(shift){
                           | add PTR,shift
                           shift=0;
                         }
@@ -86,11 +86,12 @@ int main(int argc, char *argv[])
                           | add byte[PTR],value
                           value=0;
                         }
+                        clear=0;
 			|  movzx edi, byte [PTR]
 			|  callp putchar
 			break;
 		case ',':
-                         if(shift){
+                        if(shift){
                           | add PTR,shift
                           shift=0;
                         }
@@ -98,11 +99,12 @@ int main(int argc, char *argv[])
                           | add byte[PTR],value
                           value=0;
                         }
+                        clear=0;
 			|  callp getchar
 			|  mov   byte [PTR], al
 			break;
 		case '[':
-                         if(shift){
+                        if(shift){
                           | add PTR,shift
                           shift=0;
                         }
@@ -110,10 +112,7 @@ int main(int argc, char *argv[])
                           | add byte[PTR],value
                           value=0;
                         }
-                         if(clearloop(&p)){
-                           | mov byte[PTR], 0
-                         break;
-                        }
+                        clear=1;
                        
 			if (top == limit) err("Nesting too deep.");
 			// Each loop gets two pclabels: at the beginning and end.
@@ -127,10 +126,15 @@ int main(int argc, char *argv[])
 			|=>(maxpc-1):
 			break;
 		case ']':
-                         if(shift){
+		        if(clear==2){
+		          value++;
+		          | mov byte[PTR],0
+		        }
+		        clear=0;
+                        if(shift){
                           | add PTR,shift
                           shift=0;
-                       }
+                        }
                         if(value){
                           | add byte[PTR],value
                           value=0;
