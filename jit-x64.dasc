@@ -36,6 +36,7 @@ int main(int argc, char *argv[])
         int clear=0;
         int shiftcount=0;
         int valuecount=0;
+        int loop=0;
 	// Function prologue.
 	|  push PTR
 	|  mov  PTR, rdi      // rdi store 1st argument
@@ -44,9 +45,9 @@ int main(int argc, char *argv[])
 		switch (*p) {
 		case '>':
 		        if(loop==2||loop==3){
-		          loop==3;
+		          loop=3;
 		        }else{
-		          loop==0;
+		          loop=0;
 		        }
 			if(value){
                           | add byte[PTR],value
@@ -57,7 +58,7 @@ int main(int argc, char *argv[])
 			break;
 		case '<':
 		        if(loop==4){
-		          loop==5;
+		          loop=5;
 		          valuecount=value;
 		        }else if(loop==5){
 		          /*do nothing*/
@@ -73,7 +74,7 @@ int main(int argc, char *argv[])
 			break;
 		case '+':
 		        if(loop==3){
-		          loop==4;
+		          loop=4;
 		          shiftcount=shift;
 		        }else if(loop==4){
 		          /*do nothing*/
@@ -99,9 +100,9 @@ int main(int argc, char *argv[])
                           clear=0;
                         }
                         if(loop==1){
-                          loop==2;
+                          loop=2;
                         }else{
-                          loop==0;
+                          loop=0;
                         }
 			break;
 		case '.':
